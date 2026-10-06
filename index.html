@@ -50,6 +50,7 @@ button{cursor:pointer}
 .btn{border:1px solid var(--line);background:var(--chrome-2);border-radius:6px;padding:8px 12px;min-height:40px;font-weight:550}
 .btn:hover{border-color:var(--ink-2)}
 .btn.primary{background:var(--pencil-bg);border-color:var(--pencil-bg);color:var(--pencil-ink)}
+.btn .short{display:none}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
 .stage{position:relative;background:var(--film);overflow:hidden;min-height:0}
@@ -101,8 +102,18 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
 @media (max-width:760px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
   .panel{border-left:0;border-top:1px solid var(--line);max-height:42vh;padding:10px 12px}
-  .bar h1{font-size:17px}
+  .bar{flex-wrap:nowrap;gap:6px;padding:6px 8px}
+  .bar h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .bar .logo{width:36px;height:36px;flex:none;margin-right:2px}
+  .bar .btn{flex:1 1 auto;min-width:0;min-height:44px;padding:8px 6px;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn .long{display:none}
+  .btn .short{display:inline}
   .m .ang{font-size:30px}
+}
+@media (max-width:350px){
+  .bar{gap:4px;padding:6px}
+  .bar .logo{display:none}
+  .bar .btn{font-size:14px;padding:8px 4px}
 }
 </style>
 </head>
@@ -110,9 +121,9 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
 <div class="app">
   <header class="bar">
     <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzBFMjIzMyIvPjxnIGZpbGw9IiNFM0VDRjIiPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAxNDIuNSkgcm90YXRlKDM0KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDE5Ni43KSByb3RhdGUoMTcpIi8+PHJlY3QgeD0iLTUyIiB5PSItMjIiIHdpZHRoPSIxMDQiIGhlaWdodD0iNDQiIHJ4PSIxMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTU1LjMgMjU2KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDMxNS4zKSByb3RhdGUoLTE3KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAzNjkuNSkgcm90YXRlKC0zNCkiLz48L2c+PHBhdGggZD0iTTEyOC4zIDU1LjEgTDQyNi4yIDI1NiBMMTI4LjMgNDU2LjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0YyQzIzMCIgc3Ryb2tlLXdpZHRoPSIxNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTM2My4yIDIxMy41IEE3NiA3NiAwIDAgMCAzNjMuMiAyOTguNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJDMjMwIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" alt="" width="32" height="32"><h1>Cobbův úhel</h1>
-    <button class="btn" id="pick">Nahrát snímek</button>
-    <button class="btn" id="remove" hidden>Odstranit snímek</button>
-    <button class="btn primary" id="add" disabled>Přidat křivku</button>
+    <button class="btn" id="pick"><span class="long">Nahrát snímek</span><span class="short">Nahrát snímek</span></button>
+    <button class="btn" id="remove" hidden><span class="long">Odstranit snímek</span><span class="short">Odstranit</span></button>
+    <button class="btn primary" id="add" disabled><span class="long">Přidat křivku</span><span class="short">+ Křivka</span></button>
     <input type="file" id="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
   </header>
 
@@ -455,11 +466,12 @@ $("zfit").addEventListener("click",fit);
 
 /* ---------- image loading ---------- */
 var loadSeq=0;
+function setPick(l,sh){var b=$("pick");b.querySelector(".long").textContent=l;b.querySelector(".short").textContent=sh}
 function showImage(img){
   S.img=img;S.iw=img.naturalWidth||img.width;S.ih=img.naturalHeight||img.height;
   S.ms=[];S.active=null;S.next=1;
   $("empty").hidden=true;$("zoom").hidden=false;$("add").disabled=false;
-  $("pick").textContent="Změnit snímek";$("remove").hidden=false;
+  setPick("Změnit snímek","Změnit");$("remove").hidden=false;
   say("");
   resize();fit();addCurve();
 }
@@ -535,7 +547,7 @@ function removeImage(){
   loadSeq++;
   S.img=null;S.iw=0;S.ih=0;S.ms=[];S.active=null;S.next=1;
   $("empty").hidden=false;$("zoom").hidden=true;$("add").disabled=true;$("remove").hidden=true;
-  $("pick").textContent="Nahrát snímek";
+  setPick("Nahrát snímek","Nahrát snímek");
   say("");hideLoupe();renderList();draw();
 }
 $("remove").addEventListener("click",removeImage);
