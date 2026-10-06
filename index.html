@@ -470,15 +470,53 @@ function loadFile(f){
   say("Načítám snímek…",true);
   var fail=function(){
     if(seq!==loadSeq)return;
-    say("Snímek „"+(f.name||"")+"“ se nepodařilo otevřít. Prohlížeč tento formát nepřečte, uložte ho jako JPG nebo PNG.");
+    var nm="„"+(f.name||"soubor")+"“",mb=(f.size/1048576).toFixed(1).replace(".",",")+" MB";
+    var generic=function(kind){
+      if(seq!==loadSeq)return;
+      say(kind?("Snímek "+nm+" nejde otevřít: "+kind+" Uložte ho jako JPG nebo PNG."):("Snímek "+nm+" ("+mb+") se nepodařilo otevřít. Zkuste ho uložit znovu jako JPG, případně v menším rozlišení."));
+    };
+    try{
+      var r=new FileReader();
+      r.onerror=function(){generic("")};
+      r.onload=function(){
+        var b=new Uint8Array(r.result),t=function(o,str){for(var k=0;k<str.length;k++)if(b[o+k]!==str.charCodeAt(k))return false;return true},kind="";
+        if(b.length>=132&&t(128,"DICM"))kind="ve skutečnosti je to soubor DICOM.";
+        else if(t(0,"%PDF"))kind="ve skutečnosti je to PDF.";
+        else if(t(0,"II*")||t(0,"MM"))kind="ve skutečnosti je to TIFF, který prohlížeč nepřečte.";
+        else if(t(4,"ftyp")&&(t(8,"hei")||t(8,"mif1")||t(8,"hev")))kind="ve skutečnosti je to HEIC, který tento prohlížeč nepřečte.";
+        else if(t(0,"PK"))kind="ve skutečnosti je to archiv ZIP.";
+        else if(b.length===0)kind="soubor je prázdný.";
+        else if(b[0]===0x89&&t(1,"PNG"))kind="";
+        generic(kind);
+      };
+      r.readAsArrayBuffer(f.slice(0,140));
+    }catch(e){generic("")}
+  };
+  var MAXPX=12e6;
+  var accept=function(img){
+    if(seq!==loadSeq)return;
+    var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+    if(!w||!h){fail();return}
+    if(w*h<=MAXPX){showImage(img);return}
+    var k=Math.sqrt(MAXPX/(w*h)),w2=Math.round(w*k),h2=Math.round(h*k);
+    var viaCanvas=function(){
+      try{
+        var c=document.createElement("canvas");c.width=w2;c.height=h2;
+        var x=c.getContext("2d");x.imageSmoothingQuality="high";x.drawImage(img,0,0,w2,h2);
+        if(seq===loadSeq)showImage(c);
+      }catch(e){if(seq===loadSeq)showImage(img)}
+    };
+    if(window.createImageBitmap){
+      createImageBitmap(f,{resizeWidth:w2,resizeHeight:h2,resizeQuality:"high"}).then(function(bm){if(seq===loadSeq)showImage(bm)},viaCanvas);
+    }else viaCanvas();
   };
   var viaReader=function(){
     var rd=new FileReader();
     rd.onload=function(){
       if(seq!==loadSeq)return;
       var img=new Image();
-      img.onload=function(){if(seq===loadSeq)showImage(img)};
-      img.onerror=fail;
+      img.onload=function(){accept(img)};
+      img.onerror=function(){if(window.createImageBitmap)createImageBitmap(f).then(function(bm){if(seq===loadSeq)showImage(bm)},fail);else fail()};
       img.src=rd.result;
     };
     rd.onerror=fail;
@@ -488,7 +526,7 @@ function loadFile(f){
   try{url=URL.createObjectURL(f)}catch(e){}
   if(!url){viaReader();return}
   var im2=new Image();
-  im2.onload=function(){if(seq===loadSeq)showImage(im2)};
+  im2.onload=function(){accept(im2)};
   im2.onerror=function(){try{URL.revokeObjectURL(url)}catch(e){}viaReader()};
   im2.src=url;
 }
