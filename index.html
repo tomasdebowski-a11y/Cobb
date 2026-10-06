@@ -111,6 +111,7 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
   <header class="bar">
     <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzBFMjIzMyIvPjxnIGZpbGw9IiNFM0VDRjIiPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAxNDIuNSkgcm90YXRlKDM0KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDE5Ni43KSByb3RhdGUoMTcpIi8+PHJlY3QgeD0iLTUyIiB5PSItMjIiIHdpZHRoPSIxMDQiIGhlaWdodD0iNDQiIHJ4PSIxMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTU1LjMgMjU2KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDMxNS4zKSByb3RhdGUoLTE3KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAzNjkuNSkgcm90YXRlKC0zNCkiLz48L2c+PHBhdGggZD0iTTEyOC4zIDU1LjEgTDQyNi4yIDI1NiBMMTI4LjMgNDU2LjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0YyQzIzMCIgc3Ryb2tlLXdpZHRoPSIxNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTM2My4yIDIxMy41IEE3NiA3NiAwIDAgMCAzNjMuMiAyOTguNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJDMjMwIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" alt="" width="32" height="32"><h1>Cobbův úhel</h1>
     <button class="btn" id="pick">Nahrát snímek</button>
+    <button class="btn" id="remove" hidden>Odstranit snímek</button>
     <button class="btn primary" id="add" disabled>Přidat křivku</button>
     <input type="file" id="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
   </header>
@@ -458,7 +459,7 @@ function showImage(img){
   S.img=img;S.iw=img.naturalWidth||img.width;S.ih=img.naturalHeight||img.height;
   S.ms=[];S.active=null;S.next=1;
   $("empty").hidden=true;$("zoom").hidden=false;$("add").disabled=false;
-  $("pick").textContent="Jiný snímek";
+  $("pick").textContent="Změnit snímek";$("remove").hidden=false;
   say("");
   resize();fit();addCurve();
 }
@@ -530,6 +531,14 @@ function loadFile(f){
   im2.onerror=function(){try{URL.revokeObjectURL(url)}catch(e){}viaReader()};
   im2.src=url;
 }
+function removeImage(){
+  loadSeq++;
+  S.img=null;S.iw=0;S.ih=0;S.ms=[];S.active=null;S.next=1;
+  $("empty").hidden=false;$("zoom").hidden=true;$("add").disabled=true;$("remove").hidden=true;
+  $("pick").textContent="Nahrát snímek";
+  say("");hideLoupe();renderList();draw();
+}
+$("remove").addEventListener("click",removeImage);
 var file=$("file");
 function pickFile(){try{file.value=""}catch(e){}file.click()}
 $("pick").addEventListener("click",pickFile);
