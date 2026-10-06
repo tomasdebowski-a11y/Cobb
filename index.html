@@ -67,6 +67,7 @@ button{cursor:pointer}
 .loupe canvas{position:absolute;inset:0;width:100%;height:100%}
 .loupe.on{display:block}
 
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:calc(100% - 24px);background:#f2c230;color:#1a1400;font-weight:600;padding:10px 14px;border-radius:6px;box-shadow:0 4px 18px rgba(0,0,0,.5);z-index:5;text-align:center}
 .zoom{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
 .zoom button{width:40px;height:40px;border-radius:6px;border:1px solid #3a4a58;background:rgba(18,26,34,.85);color:#e9eef2;font-size:18px;line-height:1}
 .zoom button.wide{width:auto;padding:0 10px;font-size:14px}
@@ -111,7 +112,7 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
     <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzBFMjIzMyIvPjxnIGZpbGw9IiNFM0VDRjIiPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAxNDIuNSkgcm90YXRlKDM0KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDE5Ni43KSByb3RhdGUoMTcpIi8+PHJlY3QgeD0iLTUyIiB5PSItMjIiIHdpZHRoPSIxMDQiIGhlaWdodD0iNDQiIHJ4PSIxMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTU1LjMgMjU2KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2NC4yIDMxNS4zKSByb3RhdGUoLTE3KSIvPjxyZWN0IHg9Ii01MiIgeT0iLTIyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjQ0IiByeD0iMTEiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5MCAzNjkuNSkgcm90YXRlKC0zNCkiLz48L2c+PHBhdGggZD0iTTEyOC4zIDU1LjEgTDQyNi4yIDI1NiBMMTI4LjMgNDU2LjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0YyQzIzMCIgc3Ryb2tlLXdpZHRoPSIxNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTM2My4yIDIxMy41IEE3NiA3NiAwIDAgMCAzNjMuMiAyOTguNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjJDMjMwIiBzdHJva2Utd2lkdGg9IjEwIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" alt="" width="32" height="32"><h1>Cobbův úhel</h1>
     <button class="btn" id="pick">Nahrát snímek</button>
     <button class="btn primary" id="add" disabled>Přidat křivku</button>
-    <input type="file" id="file" accept="image/*" hidden>
+    <input type="file" id="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
   </header>
 
   <main class="stage" id="stage">
@@ -127,6 +128,7 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
       <p class="hint">Snímek zůstává jen ve vašem zařízení, nikam se neodesílá.</p>
     </div>
     <div class="loupe" id="loupe"><canvas id="lim" width="264" height="264"></canvas><canvas id="lov" width="264" height="264"></canvas></div>
+    <div class="toast" id="toast" role="alert" hidden></div>
     <div class="zoom" id="zoom" hidden>
       <button id="zout" aria-label="Oddálit">−</button>
       <button id="zin" aria-label="Přiblížit">+</button>
@@ -157,7 +159,7 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
     <details>
       <summary>Jak měřit</summary>
       <p class="fine">Horní přímku položte na horní krycí ploténku nejvíce nakloněného obratle nad vrcholem křivky, dolní přímku na dolní krycí ploténku nejvíce nakloněného obratle pod vrcholem. Koncové body přímek táhněte, celou přímku posunete tažením za její střed.</p>
-      <p class="fine">Orientační pásma: do 10° pod hranicí skoliózy, 10–24° mírná, 25–44° střední, od 45° těžká křivka.</p>
+      <p class="fine">Pásma podle SOSORT 2016: do 20° nízký stupeň, 21–35° střední, 36–40° střední až těžký, 41–50° těžký, 51–55° těžký až velmi těžký, od 56° velmi těžký. Pod 10° se křivka za skoliózu nepovažuje. Úhel nezávisí na natočení ani přiblížení snímku.</p>
       <p class="fine">Pomůcka pro orientační měření, nenahrazuje hodnocení snímku lékařem.</p>
     </details>
   </aside>
@@ -181,16 +183,30 @@ function tilt(a,b){
   return Math.atan2(-dy,dx)*180/Math.PI;
 }
 function calc(m){
-  var t1=tilt(m.p[0],m.p[1]),t2=tilt(m.p[2],m.p[3]);
-  return{t1:t1,t2:t2,cobb:Math.abs(t1-t2)};
+  var p=m.p,t1=tilt(p[0],p[1]),t2=tilt(p[2],p[3]);
+  var ax=(p[2].x+p[3].x-p[0].x-p[1].x)/2,ay=(p[2].y+p[3].y-p[0].y-p[1].y)/2;
+  var d1x=p[1].x-p[0].x,d1y=p[1].y-p[0].y,d2x=p[3].x-p[2].x,d2y=p[3].y-p[2].y;
+  var cobb;
+  if(Math.hypot(ax,ay)<1e-9){
+    cobb=Math.atan2(Math.abs(d1x*d2y-d1y*d2x),Math.abs(d1x*d2x+d1y*d2y));
+  }else{
+    if(ax*d1y-ay*d1x<0){d1x=-d1x;d1y=-d1y}
+    if(ax*d2y-ay*d2x<0){d2x=-d2x;d2y=-d2y}
+    cobb=Math.atan2(Math.abs(d1x*d2y-d1y*d2x),d1x*d2x+d1y*d2y);
+  }
+  return{t1:t1,t2:t2,cobb:cobb*180/Math.PI};
 }
 function band(a){
+  a=Math.round(a*10)/10;
   if(a<10)return"pod hranicí skoliózy";
-  if(a<25)return"mírná křivka";
-  if(a<45)return"střední křivka";
-  return"těžká křivka";
+  if(a<21)return"nízký stupeň";
+  if(a<36)return"střední stupeň";
+  if(a<41)return"střední až těžký stupeň";
+  if(a<51)return"těžký stupeň";
+  if(a<56)return"těžký až velmi těžký stupeň";
+  return"velmi těžký stupeň";
 }
-function fmt(n){return n.toFixed(1).replace(".",",").replace("-","−")}
+function fmt(n){return (Math.round(n*10)/10).toFixed(1).replace(".",",").replace("-","−")}
 function segDist(p,a,b){
   var dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy;
   var t=l?((p.x-a.x)*dx+(p.y-a.y)*dy)/l:0;t=Math.max(0,Math.min(1,t));
@@ -342,7 +358,11 @@ function updateValues(){
   });
 }
 var sayT;
-function say(t){$("status").textContent=t;clearTimeout(sayT);sayT=setTimeout(function(){$("status").textContent=""},4000)}
+function say(t,keep){
+  $("status").textContent=t;$("toast").textContent=t;$("toast").hidden=!t;
+  clearTimeout(sayT);
+  if(t&&!keep)sayT=setTimeout(function(){$("status").textContent="";$("toast").hidden=true},7000);
+}
 
 /* ---------- pointer interaction ---------- */
 var ptrs=new Map(),drag=null,pinch=null;
@@ -433,29 +453,50 @@ $("zout").addEventListener("click",function(){zoomAt(S.W/2,S.H/2,1/1.4)});
 $("zfit").addEventListener("click",fit);
 
 /* ---------- image loading ---------- */
+var loadSeq=0;
+function showImage(img){
+  S.img=img;S.iw=img.naturalWidth||img.width;S.ih=img.naturalHeight||img.height;
+  S.ms=[];S.active=null;S.next=1;
+  $("empty").hidden=true;$("zoom").hidden=false;$("add").disabled=false;
+  $("pick").textContent="Jiný snímek";
+  say("");
+  resize();fit();addCurve();
+}
 function loadFile(f){
   if(!f)return;
-  if(!/^image\//.test(f.type)){say("Tento soubor není obrázek. Nahrajte snímek ve formátu JPG nebo PNG.");return}
-  var rd=new FileReader();
-  rd.onload=function(){
-    var img=new Image();
-    img.onload=function(){
-      S.img=img;S.iw=img.naturalWidth;S.ih=img.naturalHeight;
-      S.ms=[];S.active=null;S.next=1;
-      $("empty").hidden=true;$("zoom").hidden=false;$("add").disabled=false;
-      $("pick").textContent="Jiný snímek";
-      resize();fit();addCurve();
-    };
-    img.onerror=function(){say("Snímek se nepodařilo načíst. Zkuste ho uložit jako JPG nebo PNG.")};
-    img.src=rd.result;
+  var isImg=/^image\//.test(f.type)||(!f.type&&/\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i.test(f.name||""))||(!f.type&&!f.name);
+  if(!isImg){say("Soubor „"+(f.name||"")+"“ není obrázek. Nahrajte snímek ve formátu JPG nebo PNG.");return}
+  var seq=++loadSeq;
+  say("Načítám snímek…",true);
+  var fail=function(){
+    if(seq!==loadSeq)return;
+    say("Snímek „"+(f.name||"")+"“ se nepodařilo otevřít. Prohlížeč tento formát nepřečte, uložte ho jako JPG nebo PNG.");
   };
-  rd.onerror=function(){say("Soubor se nepodařilo přečíst.")};
-  rd.readAsDataURL(f);
+  var viaReader=function(){
+    var rd=new FileReader();
+    rd.onload=function(){
+      if(seq!==loadSeq)return;
+      var img=new Image();
+      img.onload=function(){if(seq===loadSeq)showImage(img)};
+      img.onerror=fail;
+      img.src=rd.result;
+    };
+    rd.onerror=fail;
+    rd.readAsDataURL(f);
+  };
+  var url=null;
+  try{url=URL.createObjectURL(f)}catch(e){}
+  if(!url){viaReader();return}
+  var im2=new Image();
+  im2.onload=function(){if(seq===loadSeq)showImage(im2)};
+  im2.onerror=function(){try{URL.revokeObjectURL(url)}catch(e){}viaReader()};
+  im2.src=url;
 }
 var file=$("file");
-$("pick").addEventListener("click",function(){file.click()});
-$("pick2").addEventListener("click",function(){file.click()});
-file.addEventListener("change",function(){loadFile(file.files[0]);file.value=""});
+function pickFile(){try{file.value=""}catch(e){}file.click()}
+$("pick").addEventListener("click",pickFile);
+$("pick2").addEventListener("click",pickFile);
+file.addEventListener("change",function(){if(file.files&&file.files[0])loadFile(file.files[0])});
 stage.addEventListener("dragover",function(e){e.preventDefault();stage.classList.add("drop")});
 stage.addEventListener("dragleave",function(){stage.classList.remove("drop")});
 stage.addEventListener("drop",function(e){
