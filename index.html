@@ -756,7 +756,7 @@ function saveBlob(blob,name){
   var touch=window.matchMedia&&window.matchMedia("(pointer:coarse)").matches,f=null;
   try{f=new File([blob],name,{type:blob.type})}catch(e){}
   if(touch&&f&&navigator.canShare&&navigator.canShare({files:[f]})){
-    return navigator.share({files:[f],title:"Cobbův úhel"}).then(function(){say("")},function(err){
+    return navigator.share({files:[f]}).then(function(){say("")},function(err){
       if(err&&err.name==="AbortError")return;
       anchorSave(blob,name);
     });
