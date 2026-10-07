@@ -99,6 +99,17 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
 .fine + .fine{margin-top:6px}
 .status{min-height:1.4em;color:var(--ink-2);font-size:13px;margin:0}
 
+.sheet{position:fixed;inset:0;background:rgba(5,8,12,.62);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.card{background:var(--chrome);border:1px solid var(--line);border-radius:10px;padding:16px;width:min(440px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-size:18px;font-weight:650;font-stretch:88%}
+.card .f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
+.card .f input{font-size:16px;color:var(--ink);background:var(--chrome-2);border:1px solid var(--line);border-radius:6px;padding:10px;min-height:44px;width:100%}
+.card .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.card .f{min-width:0}
+.card .f input{min-width:0;box-sizing:border-box}
+.card .acts{display:flex;gap:8px;justify-content:flex-end}
+.card .acts .btn{min-height:44px;min-width:110px}
+
 @media (max-width:760px){
   .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
   .panel{border-left:0;border-top:1px solid var(--line);max-height:42vh;padding:10px 12px}
@@ -186,11 +197,30 @@ summary{cursor:pointer;font-weight:600;padding:4px 0}
       <summary>Jak měřit</summary>
       <p class="fine">Horní přímku položte na horní krycí ploténku nejvíce nakloněného obratle nad vrcholem křivky, dolní přímku na dolní krycí ploténku nejvíce nakloněného obratle pod vrcholem. Koncové body přímek táhněte, celou přímku posunete tažením za její střed.</p>
       <p class="fine">Pásma podle SOSORT 2016: do 20° nízký stupeň, 21–35° střední, 36–40° střední až těžký, 41–50° těžký, 51–55° těžký až velmi těžký, od 56° velmi těžký. Pod 10° se křivka za skoliózu nepovažuje. Úhel nezávisí na natočení ani přiblížení snímku.</p>
-      <p class="fine">Uložený obrázek i PDF obsahují snímek s přímkami a naměřené úhly. PDF je připravené na tisk na A4.</p>
+      <p class="fine">Uložený obrázek i PDF obsahují hlavičku (pacient, datum vyšetření, kdo měřil, pracoviště), snímek s přímkami a naměřené úhly. PDF je připravené na tisk na A4.</p>
       <p class="fine">Pomůcka pro orientační měření, nenahrazuje hodnocení snímku lékařem.</p>
     </details>
     </div>
   </aside>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <form class="card" id="metaForm" autocomplete="off">
+    <h2>Hlavička exportu</h2>
+    <label class="f">Jméno pacienta<input id="mPat" type="text" maxlength="60"></label>
+    <div class="two">
+      <label class="f">Datum narození<input id="mBorn" type="date"></label>
+      <label class="f">Datum vyšetření<input id="mDate" type="date"></label>
+    </div>
+    <label class="f">Měření provedl/a<input id="mBy" type="text" maxlength="60"></label>
+    <label class="f">Pracoviště<input id="mSite" type="text" maxlength="70"></label>
+    <label class="f">Poznámka<input id="mNote" type="text" maxlength="100"></label>
+    <p class="fine">Všechna pole jsou nepovinná. „Měření provedl/a“ a „Pracoviště“ si toto zařízení zapamatuje, údaje o pacientovi ne.</p>
+    <div class="acts">
+      <button type="button" class="btn" id="mCancel">Zrušit</button>
+      <button type="submit" class="btn primary" id="mOk">Uložit</button>
+    </div>
+  </form>
 </div>
 
 <script>
@@ -485,7 +515,7 @@ var loadSeq=0;
 function setPick(l,sh){var b=$("pick");b.querySelector(".long").textContent=l;b.querySelector(".short").textContent=sh}
 function showImage(img){
   S.img=img;S.iw=img.naturalWidth||img.width;S.ih=img.naturalHeight||img.height;
-  S.ms=[];S.active=null;S.next=1;
+  S.ms=[];S.active=null;S.next=1;clearPatient();
   $("empty").hidden=true;$("zoom").hidden=false;$("add").disabled=false;
   setPick("Změnit snímek","Změnit");$("remove").hidden=false;
   say("");
@@ -564,7 +594,7 @@ function removeImage(){
   S.img=null;S.iw=0;S.ih=0;S.ms=[];S.active=null;S.next=1;
   $("empty").hidden=false;$("zoom").hidden=true;$("add").disabled=true;$("remove").hidden=true;
   setPick("Nahrát snímek","Nahrát snímek");
-  say("");hideLoupe();renderList();draw();
+  say("");hideLoupe();clearPatient();renderList();draw();
 }
 $("remove").addEventListener("click",removeImage);
 var file=$("file");
@@ -605,17 +635,47 @@ function buildExport(){
   var e=Math.min(1,2400/Math.max(S.iw,S.ih)),W=Math.max(1,Math.round(S.iw*e)),H=Math.max(1,Math.round(S.ih*e));
   var CW=Math.max(W,700),ox=Math.round((CW-W)/2),u=CW/560,v=Math.max(1,Math.max(W,H)/900),n=S.ms.length;
   var pad=20*u,rowH=26*u,F=Math.round(pad+26*u+10*u+n*rowH+8*u+16*u+pad);
-  var c=document.createElement("canvas");c.width=CW;c.height=H+F;
+  var M=meta||{},row1=[],fd=function(v){var a=/^(\d{4})-(\d\d)-(\d\d)$/.exec(v||"");return a?(+a[3])+". "+(+a[2])+". "+a[1]:""};
+  if(M.pat)row1.push(["Pacient",M.pat,2]);
+  if(fd(M.born))row1.push(["Datum narození",fd(M.born)]);
+  if(fd(M.date))row1.push(["Datum vyšetření",fd(M.date)]);
+  if(M.by)row1.push(["Měření provedl/a",M.by,2]);
+  var fRow=40*u,Hd=Math.round(pad+28*u+12*u+(row1.length?fRow:0)+(M.note?fRow:0)+6*u);
+  var c=document.createElement("canvas");c.width=CW;c.height=Hd+H+F;
   var x=c.getContext("2d");
+  var fit=function(t,px,wt,maxW){
+    x.font=wt+" "+Math.round(px)+"px Archivo, system-ui, sans-serif";
+    var w=x.measureText(t).width;
+    if(w>maxW)x.font=wt+" "+Math.max(8,Math.floor(px*maxW/w))+"px Archivo, system-ui, sans-serif";
+  };
+  x.fillStyle="#fff";x.fillRect(0,0,CW,Hd);
+  x.textBaseline="top";x.textAlign="left";x.fillStyle="#131b24";
+  fit("Měření Cobbova úhlu",24*u,700,CW*0.55);x.fillText("Měření Cobbova úhlu",pad,pad);
+  if(M.site){x.fillStyle="#51606f";fit(M.site,15*u,500,CW*0.4-2*pad);x.textAlign="right";x.fillText(M.site,CW-pad,pad+7*u);x.textAlign="left"}
+  var hy=pad+28*u+6*u;
+  x.fillStyle="#131b24";x.fillRect(pad,hy,CW-2*pad,Math.max(1,Math.round(1.5*u)));
+  hy+=8*u;
+  var cell=function(lab,val,cx,cw){
+    x.fillStyle="#51606f";fit(lab,11.5*u,500,cw);x.fillText(lab,cx,hy);
+    x.fillStyle="#131b24";fit(val,17*u,600,cw);x.fillText(val,cx,hy+15*u);
+  };
+  if(row1.length){
+    var gw=14*u,tot=0,cx=pad;row1.forEach(function(r){tot+=r[2]||1});
+    var unit=(CW-2*pad-gw*(row1.length-1))/tot;
+    row1.forEach(function(r){var cw=unit*(r[2]||1);cell(r[0],r[1],cx,cw);cx+=cw+gw});
+    hy+=fRow;
+  }
+  if(M.note)cell("Poznámka",M.note,pad,CW-2*pad);
+  x.translate(0,Hd);
   x.fillStyle="#05080c";x.fillRect(0,0,CW,H);
   x.imageSmoothingQuality="high";x.drawImage(S.img,ox,0,W,H);
   var b=+$("br").value/100,ct=+$("ct").value/100,inv=$("inv").checked;
   if(b!==1||ct!==1||inv){
     var lut=new Uint8ClampedArray(256),k;
     for(k=0;k<256;k++){var q=Math.min(1,k/255*b);q=Math.min(1,Math.max(0,(q-0.5)*ct+0.5));if(inv)q=1-q;lut[k]=Math.round(q*255)}
-    var id=x.getImageData(ox,0,W,H),d=id.data;
+    var id=x.getImageData(ox,Hd,W,H),d=id.data;
     for(k=0;k<d.length;k+=4){d[k]=lut[d[k]];d[k+1]=lut[d[k+1]];d[k+2]=lut[d[k+2]]}
-    x.putImageData(id,ox,0);
+    x.putImageData(id,ox,Hd);
   }
   x.save();x.beginPath();x.rect(0,0,CW,H);x.clip();
   var sb=function(col,w){x.lineWidth=(w+2)*v;x.strokeStyle="rgba(0,0,0,.6)";x.stroke();x.lineWidth=w*v;x.strokeStyle=col;x.stroke()};
@@ -638,14 +698,10 @@ function buildExport(){
   });
   x.restore();
   x.fillStyle="#fff";x.fillRect(0,H,CW,F);
-  var y=H+pad,st=stamp(),fit=function(t,px,wt,maxW){
-    x.font=wt+" "+Math.round(px)+"px Archivo, system-ui, sans-serif";
-    var w=x.measureText(t).width;
-    if(w>maxW)x.font=wt+" "+Math.max(8,Math.floor(px*maxW/w))+"px Archivo, system-ui, sans-serif";
-  };
+  var y=H+pad,st=stamp();
   x.textBaseline="top";x.fillStyle="#131b24";
-  fit("Cobbův úhel",22*u,700,CW*0.5);x.textAlign="left";x.fillText("Cobbův úhel",pad,y);
-  fit(st.text,15*u,400,CW*0.4);x.fillStyle="#51606f";x.textAlign="right";x.fillText(st.text,CW-pad,y+5*u);
+  fit("Výsledek měření",20*u,700,CW*0.5);x.textAlign="left";x.fillText("Výsledek měření",pad,y);
+  fit("Vytvořeno "+st.text,13*u,400,CW*0.4);x.fillStyle="#51606f";x.textAlign="right";x.fillText("Vytvořeno "+st.text,CW-pad,y+6*u);
   y+=26*u+10*u;x.textAlign="left";
   S.ms.forEach(function(m,i){
     var r=calc(m),t="Křivka "+(i+1)+": "+fmt(r.cobb)+"° ("+band(r.cobb)+")";
@@ -654,7 +710,7 @@ function buildExport(){
     y+=rowH;
   });
   y+=8*u;
-  var note="Orientační měření, nenahrazuje hodnocení snímku lékařem.";
+  var note="Klasifikace podle SOSORT 2016. Orientační měření, nenahrazuje hodnocení snímku lékařem.";
   x.fillStyle="#51606f";fit(note,13*u,400,CW-2*pad);x.fillText(note,pad,y);
   return c;
 }
@@ -712,15 +768,40 @@ var exporting=false;
 function doExport(kind){
   if(exporting||!S.img||!S.ms.length)return;
   exporting=true;
-  var done=function(){exporting=false},name="cobb-"+stamp().file,c;
+  var slug=((meta&&meta.pat)||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+  var done=function(){exporting=false},name="cobb-"+(slug?slug+"-":"")+stamp().file,c;
   try{c=buildExport()}catch(e){done();say("Export se nepodařilo vytvořit.");return}
   canvasJpeg(c).then(function(jpg){
     if(kind==="img")return saveBlob(jpg,name+".jpg");
     return jpg.arrayBuffer().then(function(buf){return saveBlob(makePdf(new Uint8Array(buf),c.width,c.height),name+".pdf")});
   }).then(done,function(){done();say("Export se nepodařilo vytvořit.")});
 }
-$("expImg").addEventListener("click",function(){doExport("img")});
-$("expPdf").addEventListener("click",function(){doExport("pdf")});
+var meta=null,sheetKind=null;
+function store(k,v){try{if(v===undefined)return localStorage.getItem("cobb."+k)||"";localStorage.setItem("cobb."+k,v)}catch(e){}return""}
+function openSheet(kind){
+  if(!S.img||!S.ms.length)return;
+  sheetKind=kind;
+  if(!$("mBy").value)$("mBy").value=store("by");
+  if(!$("mSite").value)$("mSite").value=store("site");
+  if(!$("mDate").value){var d=new Date(),z=function(n){return(n<10?"0":"")+n};$("mDate").value=d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())}
+  $("mOk").textContent=kind==="pdf"?"Uložit PDF":"Uložit obrázek";
+  $("sheet").hidden=false;
+  try{$("mPat").focus()}catch(e){}
+}
+function closeSheet(){$("sheet").hidden=true}
+function clearPatient(){$("mPat").value="";$("mBorn").value="";$("mDate").value="";$("mNote").value=""}
+$("expImg").addEventListener("click",function(){openSheet("img")});
+$("expPdf").addEventListener("click",function(){openSheet("pdf")});
+$("mCancel").addEventListener("click",closeSheet);
+$("sheet").addEventListener("pointerdown",function(e){if(e.target===$("sheet"))closeSheet()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet()});
+$("metaForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var t=function(id){return $(id).value.replace(/\s+/g," ").trim()};
+  meta={pat:t("mPat"),born:$("mBorn").value,date:$("mDate").value,by:t("mBy"),site:t("mSite"),note:t("mNote")};
+  store("by",meta.by);store("site",meta.site);
+  closeSheet();doExport(sheetKind);
+});
 document.addEventListener("keydown",function(e){
   if(/INPUT|TEXTAREA/.test(e.target.tagName))return;
   if((e.key==="Delete"||e.key==="Backspace")&&S.active!=null){removeCurve(S.active);e.preventDefault()}
